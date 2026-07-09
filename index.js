@@ -8,7 +8,7 @@ const client = new Client();
 http.createServer((req, res) => {
     res.write("I am alive");
     res.end();
-}).listen(process.env.PORT || 8080);
+}).listen(process.env.PORT || 3000);
 
 client.on('ready', async () => {
     console.log(`تم تسجيل الدخول كـ ${client.user.tag}`);

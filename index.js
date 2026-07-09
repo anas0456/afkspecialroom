@@ -21,7 +21,7 @@ client.on('ready', () => {
         });
 
         const player = createAudioPlayer();
-        const resource = createAudioResource(path.join(__dirname, 'noise.mp3')); // ملف الصوت الخاص بك
+        const resource = createAudioResource(path.join(__dirname, 'noise.opus')); // ملف الصوت الخاص بك
 
         player.play(resource);
         connection.subscribe(player);

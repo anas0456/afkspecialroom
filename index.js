@@ -1,51 +1,53 @@
-require('./keep_alive.js');
 const { Client } = require('discord.js-selfbot-v13');
 const { joinVoiceChannel } = require('@discordjs/voice');
-const { ChannelType } = require('discord.js-selfbot-v13'); // تأكد من استيراد النوع
+require('./keep_alive.js');
 
 const client = new Client();
 
+// آيدي السيرفر
+const GUILD_ID = '1264561928034975775';
+// آيدي الروم الذي تدخل فيه لكي يقوم Temp Voice بإنشاء روم جديد لك
+const JOIN_TO_CREATE_ID = '1496674843184074945'; 
+
 client.on('ready', async () => {
-    console.log(`تم تسجيل الدخول بنجاح كـ ${client.user.tag}`);
-    
-    // آيدي السيرفر الذي سينشئ فيه البوت الروم
-    const guildId = '1264561928034975775'; 
-    const guild = client.guilds.cache.get(guildId);
-    
-    if (!guild) return console.log("السيرفر غير موجود!");
+    console.log(`تم التشغيل كـ ${client.user.tag}`);
 
-    // 1. إنشاء الروم الصوتي
-    const newChannel = await guild.channels.create({
-        name: 'روم-مؤقت',
-        type: ChannelType.GuildVoice,
-    });
+    const findAndJoinMyRoom = async () => {
+        const guild = client.guilds.cache.get(GUILD_ID);
+        if (!guild) return console.log("السيرفر غير موجود!");
 
-    const channelId = newChannel.id;
-    console.log(`تم إنشاء الروم وآيديه: ${channelId}`);
+        // 1. الدخول لروم الـ Join to Create
+        joinVoiceChannel({
+            channelId: JOIN_TO_CREATE_ID,
+            guildId: guild.id,
+            adapterCreator: guild.voiceAdapterCreator,
+        });
 
-    // 2. دالة الانضمام والإرسال
-    const joinAndTalk = () => {
-        const channel = client.channels.cache.get(channelId);
-        if (channel) {
-            // الانضمام
-            joinVoiceChannel({
-                channelId: channel.id,
-                guildId: channel.guild.id,
-                adapterCreator: channel.guild.voiceAdapterCreator,
-                selfDeaf: false,
-                selfMute: true
-            });
+        // 2. الانتظار قليلاً ليقوم بوت Temp Voice بإنشاء الروم الخاص بك
+        setTimeout(() => {
+            // البحث عن الروم الذي يحتوي على البوت الخاص بك حالياً
+            const myRoom = guild.channels.cache.find(c => 
+                c.type === 2 && c.members.has(client.user.id) && c.id !== JOIN_TO_CREATE_ID
+            );
 
-            // إرسال الرسالة كل ثانيتين
-            channel.send("مرحبا كيفك اخي").catch(console.error);
-        }
+            if (myRoom) {
+                console.log(`تم العثور على الروم الجديد: ${myRoom.name}`);
+                
+                // الانتقال للروم الجديد
+                joinVoiceChannel({
+                    channelId: myRoom.id,
+                    guildId: guild.id,
+                    adapterCreator: guild.voiceAdapterCreator,
+                });
+
+                // إرسال الرسالة
+                myRoom.send("مرحبا كيفك اخي").catch(err => console.log("لا يمكن الإرسال في هذا الروم"));
+            }
+        }, 5000); // زدنا الوقت لـ 5 ثواني لضمان أن الروم قد أُنشئ فعلاً
     };
 
-    // التشغيل الأول
-    joinAndTalk();
-
-    // إعادة الاتصال والإرسال كل 30 ثانية
-    setInterval(joinAndTalk, 30000); 
+    findAndJoinMyRoom();
+    setInterval(findAndJoinMyRoom, 60000); // يكرر العملية كل دقيقة للتأكد
 });
 
 client.login(process.env.token);
